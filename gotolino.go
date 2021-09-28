@@ -1,10 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
-	"bufio"
 	"strings"
+	"regexp"
 )
 
 func check(e error) {
@@ -21,53 +22,74 @@ type Note struct {
 	note string
 }
 
-type NoteTypes struct {
-	note string
-	marking string
-	bookmark string
-}
-
 func main() {
 	notes, err := os.Open("test.txt")
 	check(err)
 	defer notes.Close()
 
+	filteredNotes := make([]Note, 0)
+
+	//fmt.Println("filtered notes", filteredNotes)
+
 	scanner := bufio.NewScanner(notes)
-	// optionally, resize scanner's capacity for lines over 64K, see next example
 	for scanner.Scan() {
+		newNote := Note{}
 		//fmt.Println(scanner.Text())
 		switch checkNoteType(scanner.Text()) {
 		case "note":
-			fmt.Println("It is a note")
+			//fmt.Println("It is a note")
 		case "marking":
-			fmt.Println("It is a marking")
+			//fmt.Println("It is a marking")
 		case "bookmark":
-			fmt.Println("it is a bookmark")
+			//fmt.Println("it is a bookmark")
 		case "delimeter":
-			fmt.Println("Delimeter")
+			//fmt.Println("Delimeter")
 		case "empty":
-			fmt.Println("Empty line")
+			//fmt.Println("Empty line")
 		case "other":
-			fmt.Println("String does not point to a note type, probably booktitle with author or a marking")
+			//fmt.Println("String does not point to a note type, probably booktitle with author or a marking")
+			title, author := getTitleAndAuthor(scanner.Text())
+
+			fmt.Println("Title: ", title, "author", author)
+
+			newNote.book = title
+			newNote.author = author
 		}
+
+		filteredNotes = append(filteredNotes, newNote)
 	}
+
+	//fmt.Println(filteredNotes);
+}
+
+func getTitleAndAuthor(text string) (string, string) {
+	isAddingInformation := strings.Contains(text, "Hinzugefügt am")
+	isQuote := strings.Contains(text, `"`)
+	title := ""
+	author := ""
+
+	if !isAddingInformation && !isQuote {
+		re := regexp.MustCompile(`(?m)\((.*?)\)`)
+		str := text
+
+		foundStrings := re.FindAllString(str, -1)
+
+		author = foundStrings[len(foundStrings) - 1]
+		firstParentheses := strings.Index(text, "(")
+		title = text[0:firstParentheses]
+	}
+
+	return title, author
 }
 
 func checkNoteType(text string) string {
-	notetypes := NoteTypes{
-		note: "Notiz",
-		marking: "Markierung",
-		bookmark: "Lesezeichen",
-	}
-	delimeter := "-----------------------------------"
-
-	if strings.Contains(text, notetypes.note) {
+	if strings.Contains(text, NOTE) {
 		return "note"
-	} else if strings.Contains(text, notetypes.marking) {
+	} else if strings.Contains(text, MARKING) {
 		return "marking"
-	} else if strings.Contains(text, notetypes.bookmark) {
+	} else if strings.Contains(text, BOOKMARK) {
 		return "bookmark"
-	} else if strings.Contains(text, delimeter) {
+	} else if strings.Contains(text, DELIMETER) {
 		return "delimeter"
 	} else if len(text) == 0 {
 		return "empty"
