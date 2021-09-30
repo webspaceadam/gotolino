@@ -4,22 +4,14 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 	"regexp"
+	"strings"
 )
 
 func check(e error) {
 	if e != nil {
 		panic(e)
 	}
-}
-
-type Note struct {
-	author string
-	book string
-	notetype string
-	marked string
-	note string
 }
 
 func main() {
@@ -29,40 +21,110 @@ func main() {
 
 	filteredNotes := make([]Note, 0)
 
-	//fmt.Println("filtered notes", filteredNotes)
-
 	scanner := bufio.NewScanner(notes)
+
+	currentlyCreatingNewNote := true
+
+	// tmpSavings
+	tmpAuthor := "tmp"
+	tmpBook := "tmp"
+	tmpNote := "tmp"
+	tmpMarked := "tmp"
+	tmpNoteType := "tmp"
+	tmpSiteInformation := "tmp"
+
+	noteCount := 0
+	fmt.Println("Starting new note! 🏃🏼")
+
 	for scanner.Scan() {
-		newNote := Note{}
-		//fmt.Println(scanner.Text())
 		switch checkNoteType(scanner.Text()) {
 		case "note":
-			//fmt.Println("It is a note")
+			tmpNote = getNote(scanner.Text())
+			tmpSiteInformation = getSiteInformation(scanner.Text())
+			tmpNoteType = "note"
 		case "marking":
-			//fmt.Println("It is a marking")
+			tmpNoteType = "marking"
+			tmpSiteInformation = getSiteInformation(scanner.Text())
 		case "bookmark":
-			//fmt.Println("it is a bookmark")
+			tmpNoteType = "bookmark"
+			tmpSiteInformation = getSiteInformation(scanner.Text())
 		case "delimeter":
-			//fmt.Println("Delimeter")
+			//fmt.Println("Starting new note! 🏃🏼")
+			noteCount += 1
+			currentlyCreatingNewNote = true
 		case "empty":
-			//fmt.Println("Empty line")
+		case "added":
+			if currentlyCreatingNewNote {
+				newNote := Note{
+					author:          tmpAuthor,
+					book:     	     tmpBook,
+					notetype: 	     tmpNoteType,
+					marked:   	     tmpMarked,
+					note:     	     tmpNote,
+					siteInformation: tmpSiteInformation,
+				}
+
+				filteredNotes = append(filteredNotes, newNote)
+				currentlyCreatingNewNote = false
+
+				fmt.Println("Ending Note 🙅🏼‍♂️")
+
+				// Reset Tmp Fields
+				tmpNote = "tmp"
+				tmpAuthor = "tmp"
+				tmpBook = "tmp"
+				tmpAuthor = "tmp"
+				tmpMarked = "tmp"
+				tmpNoteType = "tmp"
+				tmpSiteInformation = "tmp"
+			}
 		case "other":
-			//fmt.Println("String does not point to a note type, probably booktitle with author or a marking")
-			title, author := getTitleAndAuthor(scanner.Text())
+			titleOrMarking, authorOrMarkingFlag := getTitleAndAuthorOrMarking(scanner.Text())
 
-			fmt.Println("Title: ", title, "author", author)
-
-			newNote.book = title
-			newNote.author = author
+			if authorOrMarkingFlag != "marking" {
+				tmpBook = titleOrMarking
+				tmpAuthor = authorOrMarkingFlag
+			} else {
+				tmpMarked = titleOrMarking
+			}
 		}
-
-		filteredNotes = append(filteredNotes, newNote)
 	}
 
-	//fmt.Println(filteredNotes);
+	for i:=0;i<len(filteredNotes);i++{
+		fmt.Println(createNoteMd(filteredNotes[i]))
+	}
 }
 
-func getTitleAndAuthor(text string) (string, string) {
+func createNoteMd(note Note) string {
+	writtenNote := ""
+
+	if note.note != "tmp" {
+		writtenNote = note.note
+	}
+
+	noteMD := fmt.Sprintf(`
+- %s %s
+  type:: note
+  book:: [[Book - %s]]
+  author:: [[%s]] 
+  relates:: #Za:area, #Zb:book, #Zc:Chapter
+  - > %s
+`, note.siteInformation, writtenNote, note.book, note.author, note.marked)
+
+	return noteMD
+}
+
+func getNote(text string) string {
+	note := text[strings.Index(text, ":") + 2:]
+	return note
+}
+
+func getSiteInformation(text string) string {
+	siteInformation := text[0:strings.Index(text, ":")]
+	return siteInformation
+}
+
+func getTitleAndAuthorOrMarking(text string) (string, string) {
 	isAddingInformation := strings.Contains(text, "Hinzugefügt am")
 	isQuote := strings.Contains(text, `"`)
 	title := ""
@@ -75,8 +137,13 @@ func getTitleAndAuthor(text string) (string, string) {
 		foundStrings := re.FindAllString(str, -1)
 
 		author = foundStrings[len(foundStrings) - 1]
+		author = author[1 : len(author) - 1]
+		authorSplitted := strings.Split(author, ", ")
+		author = authorSplitted[1] + " " + authorSplitted[0]
 		firstParentheses := strings.Index(text, "(")
 		title = text[0:firstParentheses]
+	} else {
+		return text, "marking"
 	}
 
 	return title, author
@@ -91,6 +158,8 @@ func checkNoteType(text string) string {
 		return "bookmark"
 	} else if strings.Contains(text, DELIMETER) {
 		return "delimeter"
+	} else if strings.Contains(text, ADDED) {
+		return "added"
 	} else if len(text) == 0 {
 		return "empty"
 	}
