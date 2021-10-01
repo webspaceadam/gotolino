@@ -45,6 +45,7 @@ func main() {
 		case "marking":
 			tmpNoteType = "marking"
 			tmpSiteInformation = getSiteInformation(scanner.Text())
+			tmpMarked = getMarking(scanner.Text())
 		case "bookmark":
 			tmpNoteType = "bookmark"
 			tmpSiteInformation = getSiteInformation(scanner.Text())
@@ -95,23 +96,9 @@ func main() {
 	}
 }
 
-func createNoteMd(note Note) string {
-	writtenNote := ""
-
-	if note.note != "tmp" {
-		writtenNote = note.note
-	}
-
-	noteMD := fmt.Sprintf(`
-- %s %s
-  type:: note
-  book:: [[Book - %s]]
-  author:: [[%s]] 
-  relates:: #Za:area, #Zb:book, #Zc:Chapter
-  - > %s
-`, note.siteInformation, writtenNote, note.book, note.author, note.marked)
-
-	return noteMD
+func getMarking(text string) string {
+	marking := text[strings.Index(text, ":"): len(text)]
+	return marking
 }
 
 func getNote(text string) string {
