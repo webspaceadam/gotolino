@@ -1,0 +1,2 @@
+notesTxtLocation=/Users/gniady/Documents/personal/altertolino/200521-notes.txt
+notesSavingPath=/Users/gniady/Documents/personal/logseq-notes/booknotes
