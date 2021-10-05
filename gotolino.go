@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
+	"path/filepath"
 )
 
 func check(e error) {
@@ -130,13 +132,17 @@ func main() {
 				fmt.Println("Path already exists for: ", notePath)
 			}
 		}
+
+		fmt.Println("✅ Done creating notes in: ", settingsPath)
 	}
 }
 
+// readSettings reads the settings.txt in the current directory and returns the two locations needed for the programm
 func readSettings() (string, string) {
+	currentScriptDirectory := GetCurrentScriptDirectory();
 	var notesTxtLocation, notesSavingPath string
 
-	settings, err := os.Open("settings.txt")
+	settings, err := os.Open(currentScriptDirectory + "/settings.txt")
 	check(err)
 	defer settings.Close()
 
@@ -151,4 +157,11 @@ func readSettings() (string, string) {
 	}
 
 	return notesTxtLocation, notesSavingPath
+}
+
+// GetCurrentScriptDirectory returns the directory of the currently running go script file.
+func GetCurrentScriptDirectory() string {
+	// NOTE: Replace the 1 with a 0 if you use this code directly, instead of wrapping it in a function.
+	_, scriptPath, _, _ := runtime.Caller(1)
+	return filepath.Join(scriptPath, "../")
 }

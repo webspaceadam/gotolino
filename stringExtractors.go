@@ -53,6 +53,17 @@ func checkAuthorString(text string) bool {
 
 	isAuthor := len(foundStrings) > 0
 
+	if isAuthor {
+		author := foundStrings[len(foundStrings) - 1]
+		author = author[1 : len(author) - 1]
+		authorSplitted := strings.Split(author, ", ")
+
+		// When there are not two strings it's probably not a name
+		if len(authorSplitted) < 2 {
+			return false
+		}
+	}
+
 	return isAuthor
 }
 
